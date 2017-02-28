@@ -1,0 +1,39 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  width: 100%;
+}
+body {
+  padding: 25px;
+}
+
+.linkOpener{
+  font-size:8px;
+  display: none;
+}
+.linkOpener:hover{
+  display: inline;
+}
+
+#editor-container {
+  border: 1px solid #ccc;
+  font-family: 'Open Sans', Helvetica, sans-serif;
+}
+
+.editor-outer-container{
+  position: relative;
+  height: 200px;
+  margin: 0 auto;
+  width: 450px;
+}
+
+.inline-toolbar{
+  position : absolute;
+  padding:5px;
+  background-color: black;
+  color:white;
+}
