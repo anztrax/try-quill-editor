@@ -99,10 +99,10 @@ class InlineToolbarHover{
   }
 
   update(range, oldRange, source){
-    console.log('format', this.quill.getFormat(range));
-    console.log('contents', this.quill.getContents(range.index, 1));
-
     if (range) {
+      console.log('format', this.quill.getFormat(range));
+      console.log('contents', this.quill.getContents(range.index, 1));
+
       if (range.length == 0) {
         console.log('User cursor is on', range.index);
         $(this.container).css({
