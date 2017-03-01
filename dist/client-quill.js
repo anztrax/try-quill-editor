@@ -8,6 +8,7 @@ Quill.register(SizeStyle, true);
 
 Quill.register('modules/counter',window.plugin.Counter);
 Quill.register('modules/inlineToolbarHover',window.plugin.InlineToolbarHover);
+Quill.register('modules/inlineLinkOpener',window.plugin.InlineLinkOpenerHover);
 
 //blot section
 let Inline = Quill.import('blots/inline');
@@ -37,6 +38,15 @@ UnderlineBlot.tagName = 'del';
 class LinkBlot extends Inline{
   static create(value){
     let node = super.create();
+    let button = document.createElement('span');
+    button.setAttribute('style', 'width:10px;height:10px;display:block;background:black;');
+    button.innerText = '&nbsp;';
+    node.onmouseover = function(){
+
+    };
+    node.onmouseout = function(){
+    };
+
     // Sanitize url value if desired
     node.setAttribute('href', value);
 
@@ -148,7 +158,7 @@ class VideoBlot extends BlockEmbed{
 VideoBlot.blotName = 'video';
 VideoBlot.tagName = 'iframe';
 
-class ProcLink extends Embed{
+class ProcLink extends Inline{
   static create(value){
     let node = super.create(value);
     //give it some margin
@@ -301,7 +311,8 @@ const quill = new Quill('#editor-container',{
       container: '#text-counter',
       unit: 'word'
     },
-    inlineToolbarHover : true
+    inlineToolbarHover : true,
+    inlineLinkOpener : true
   }
 });
 

@@ -58,13 +58,27 @@ export default class Index extends React.Component{
           <div className="editor-outer-container">
             <div id="editor-container">
               Tell your story...
-              <a href="http://google.com">hello</a>
+              <a href="http://google.com">hello
+                <span style={{"background-color":"red"}}>
+                  testing gan
+                </span>
+              </a>
+              <a href="http://anothergoogle.com">
+                another google
+              </a>
             </div>
+
             <div id="inline-toolbar" className="inline-toolbar">
               <button id="inline-toolbar-bold-button">B</button>
               <button id="inline-toolbar-underline-button">U</button>
               <button id="inline-toolbar-italic-button">I</button>
               <button id="inline-toolbar-link-button">Link</button>
+            </div>
+
+            <div id="link-opener" className="link-opener">
+              <button id="openLink-button">Open Link</button>
+              <button id="editLink-button">Edit Link</button>
+              <button id="removeLink-button">Remove Link</button>
             </div>
           </div>
 

@@ -1,3 +1,6 @@
+var Parchment = Quill.import('parchment');
+
+
 //utils
 function toggleInlineUtils(quill, range, blotName, blotValue){
   const currentFormats = quill.getFormat(range);
@@ -100,11 +103,11 @@ class InlineToolbarHover{
 
   update(range, oldRange, source){
     if (range) {
-      console.log('format', this.quill.getFormat(range));
-      console.log('contents', this.quill.getContents(range.index, 1));
+      // console.log('format', this.quill.getFormat(range));
+      // console.log('contents', this.quill.getContents(range.index, 1));
 
       if (range.length == 0) {
-        console.log('User cursor is on', range.index);
+        // console.log('User cursor is on', range.index);
         $(this.container).css({
           display : 'none'
         })
@@ -118,7 +121,7 @@ class InlineToolbarHover{
         });
       }
     } else {
-      console.log('Cursor not in the editor');
+      // console.log('Cursor not in the editor');
       $(this.container).css({
         display : 'none'
       })
@@ -137,6 +140,90 @@ class InlineToolbarHover{
   }
 }
 
+class InlineLinkOpenerHover{
+  constructor(quill, options){
+    this.quill = quill;
+    this.options = options;
+    this.linkOpener = document.querySelector('#link-opener');
+    this.openLinkButton = this.linkOpener.querySelector('#openLink-button');
+    this.editLinkButton = this.linkOpener.querySelector('#editLink-button');
+    this.removeLinkButton = this.linkOpener.querySelector('#removeLink-button');
+
+    this.editorChangeHandler = this.editorChangeHandler.bind(this);
+    this.quill.on('selection-change',this.editorChangeHandler);
+  }
+
+  editorChangeHandler(event){
+    let linkElem = Parchment.find(event.target);
+    console.log(linkElem instanceof LinkBlot);
+    var range = this.quill.getSelection();
+    if(range) {
+      let [leaf, offset] = this.quill.getLeaf(range.index);
+      //get selection
+      const currentElem = leaf.parent;
+      if (currentElem instanceof LinkBlot) {
+        const bounds = this.quill.getBounds(range.index, range.length);
+        const currentFormats = this.quill.getFormat(range);
+        const linkFormats = currentFormats['link'];
+        let linkValue = null;
+
+        //TODO : need to support multiple format editing link when range is expanded
+        if (linkFormats != null && linkFormats instanceof Array) {
+          linkValue = linkFormats[0];
+        } else {
+          linkValue = linkFormats;
+        }
+
+        $(this.openLinkButton).off('click').on('click', function (event) {
+          event.preventDefault();
+          if (range) {
+            window.open(linkValue, '_blank');
+          }
+        }.bind(this));
+
+        $(this.editLinkButton).off('click').on('click', function (event) {
+          event.preventDefault();
+
+          let newURLValue = prompt('Enter new link URL');
+
+          //get current format and then offset and index of current link blot
+          const linkElemOffset = currentElem.offset();
+          const linkElemlength = currentElem.length();
+          this.quill.formatText(linkElemOffset, linkElemOffset + linkElemlength, {
+            'link': newURLValue
+          }, Quill.sources.USER);
+
+        }.bind(this));
+
+
+        $(this.removeLinkButton).off('click').on('click', function (event) {
+          event.preventDefault();
+
+        }.bind(this));
+
+        // var my_node = this.quill.selection.getNativeRange().start.node;
+        // var my_blot = Parchment.find(my_node);
+        // const currentFormats = this.quill.getFormat(range);
+        // const link = currentFormats['link'];
+        $(this.linkOpener).css({
+          display : 'block',
+          top: bounds.top + bounds.height,
+          left: bounds.left
+        })
+      }else{
+        $(this.linkOpener).css({
+          display : 'none'
+        });
+      }
+    }else {
+      $(this.linkOpener).css({
+        display : 'none'
+      })
+    }
+  }
+}
+
 window.plugin = {};
 window.plugin.Counter = Counter;
 window.plugin.InlineToolbarHover = InlineToolbarHover;
+window.plugin.InlineLinkOpenerHover = InlineLinkOpenerHover;
