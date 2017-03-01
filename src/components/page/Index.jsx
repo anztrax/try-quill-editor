@@ -12,11 +12,11 @@ export default class Index extends React.Component{
         <head>
           <title>{this.props.title}</title>
           <link href="https://cdn.quilljs.com/1.2.1/quill.snow.css" rel="stylesheet" />
-          <link rel="stylesheet" href="/dist/test.css" />
           <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
           <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.2.1/quill.min.js"></script>
+          <link rel="stylesheet" href="/dist/test.css" />
           <script src="/dist/Custom-Modules.js"></script>
         </head>
         <body>
@@ -28,6 +28,7 @@ export default class Index extends React.Component{
             <button id="link-button">Link</button>
             <button id="blockquote-button">Blockquote</button>
             <button id="comment-button">Comment</button>
+            <button id="resolve-comment-button">Resolve Comment</button>
             <button id="suggestion-button">Suggestion</button>
             <button id="simple-link-button">Simple Link</button>
             <select id="header-dropdown">
@@ -59,13 +60,13 @@ export default class Index extends React.Component{
             <div id="editor-container">
               Tell your story...
               <a href="http://google.com">hello
-                <span style={{"background-color":"red"}}>
-                  testing gan
-                </span>
               </a>
               <a href="http://anothergoogle.com">
                 another google
               </a>
+              <span data-commentID="100" className="comment-blot">
+                tesitng gan
+              </span>
             </div>
 
             <div id="inline-toolbar" className="inline-toolbar">

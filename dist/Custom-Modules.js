@@ -148,77 +148,147 @@ class InlineLinkOpenerHover{
     this.openLinkButton = this.linkOpener.querySelector('#openLink-button');
     this.editLinkButton = this.linkOpener.querySelector('#editLink-button');
     this.removeLinkButton = this.linkOpener.querySelector('#removeLink-button');
+    this.hideLinkOpener = this.hideLinkOpener.bind(this);
 
     this.editorChangeHandler = this.editorChangeHandler.bind(this);
     this.quill.on('selection-change',this.editorChangeHandler);
   }
 
-  editorChangeHandler(event){
-    let linkElem = Parchment.find(event.target);
-    console.log(linkElem instanceof LinkBlot);
-    var range = this.quill.getSelection();
+  hideLinkOpener(){
+    $(this.linkOpener).css({
+      display : 'none'
+    });
+  }
+
+  editorChangeHandler(event) {
+    if (event != null) {
+      let linkElem = Parchment.find(event.target);
+      var range = this.quill.getSelection();
+      if (range) {
+        let [leaf, offset] = this.quill.getLeaf(range.index);
+        //get selection
+        const currentElem = leaf.parent;
+        if (currentElem instanceof LinkBlot) {
+          const bounds = this.quill.getBounds(range.index, range.length);
+          const currentFormats = this.quill.getFormat(range);
+          const linkFormats = currentFormats['link'];
+          let linkValue = null;
+
+          //TODO : need to support multiple format editing link when range is expanded
+          if (linkFormats != null && linkFormats instanceof Array) {
+            linkValue = linkFormats[0];
+          } else {
+            linkValue = linkFormats;
+          }
+
+          //open link button
+          $(this.openLinkButton).off('click').on('click', function (event) {
+            event.preventDefault();
+            if (range) {
+              window.open(linkValue, '_blank');
+            }
+          }.bind(this));
+
+          //edit link button
+          $(this.editLinkButton).off('click').on('click', function (event) {
+            event.preventDefault();
+
+            let newURLValue = prompt('Enter new link URL');
+
+            //get current format and then offset and index of current link blot
+            const linkElemOffset = currentElem.offset();
+            const linkElemlength = currentElem.length();
+            this.quill.formatText(linkElemOffset, linkElemOffset + linkElemlength, {
+              'link': newURLValue
+            }, Quill.sources.USER);
+            this.hideLinkOpener();
+          }.bind(this));
+
+
+          //remove link button
+          $(this.removeLinkButton).off('click').on('click', function (event) {
+            event.preventDefault();
+
+            const linkElemOffset = currentElem.offset();
+            const linkElemlength = currentElem.length();
+            this.quill.formatText(linkElemOffset, linkElemOffset + linkElemlength, {
+              'link': false
+            }, Quill.sources.USER);
+            this.hideLinkOpener();
+          }.bind(this));
+
+          // var my_node = this.quill.selection.getNativeRange().start.node;
+          // var my_blot = Parchment.find(my_node);
+          // const currentFormats = this.quill.getFormat(range);
+          // const link = currentFormats['link'];
+          $(this.linkOpener).css({
+            display: 'block',
+            top: bounds.top + bounds.height,
+            left: bounds.left
+          })
+        } else {
+          this.hideLinkOpener();
+        }
+      } else {
+        this.hideLinkOpener();
+      }
+    }
+  }
+}
+
+/**
+ * Comment Highlighter
+ */
+class CommentHighlighter{
+  constructor(quill, options){
+    this.quill = quill;
+    this.options = options;
+    this.editorChangeHandler = this.editorChangeHandler.bind(this);
+    this.removeHiglightedComment = this.removeHiglightedComment.bind(this);
+
+    this.quill.on('selection-change',this.editorChangeHandler);
+  }
+
+  removeHiglightedComment(){
+    const allCommentNodes = document.querySelectorAll('span[data-commentid]');
+    for (let i = 0; i < allCommentNodes.length; ++i) {
+      allCommentNodes[i].className = 'comment-blot';
+    }
+  }
+
+  editorChangeHandler(currentRange, oldRange, source){
+    //get parent of the parent ?, no i think . just find the comment ID
+    const range = this.quill.getSelection();
     if(range) {
       let [leaf, offset] = this.quill.getLeaf(range.index);
-      //get selection
       const currentElem = leaf.parent;
-      if (currentElem instanceof LinkBlot) {
-        const bounds = this.quill.getBounds(range.index, range.length);
+
+      this.removeHiglightedComment();
+      if (currentElem instanceof CommentBlot) {
         const currentFormats = this.quill.getFormat(range);
-        const linkFormats = currentFormats['link'];
-        let linkValue = null;
+        const commentFormats = currentFormats['comment'];
+        if (typeof commentFormats !== 'undefined') {
+          if (commentFormats.length >= 1) {
+            let commentFormat = commentFormats;
+            if (commentFormats instanceof Array) {
+              commentFormat = commentFormats[0];
+            }
 
-        //TODO : need to support multiple format editing link when range is expanded
-        if (linkFormats != null && linkFormats instanceof Array) {
-          linkValue = linkFormats[0];
-        } else {
-          linkValue = linkFormats;
-        }
+            const commentIDValues = commentFormat.split(',');
+            const commentIDLastValue = commentIDValues[commentIDValues.length - 1];
 
-        $(this.openLinkButton).off('click').on('click', function (event) {
-          event.preventDefault();
-          if (range) {
-            window.open(linkValue, '_blank');
+            //get nodes of comment then add style
+            const commentNodes = document.querySelectorAll('span[data-commentid*="' + commentIDLastValue + '"]');
+            for (let i = 0; i < commentNodes.length; ++i) {
+              commentNodes[i].className = 'comment-blot highlighted-comment-blot';
+            }
+
+            // console.log('link node : ',linkNode, ' , commentIDLastValue : ',commentIDLastValue);
           }
-        }.bind(this));
-
-        $(this.editLinkButton).off('click').on('click', function (event) {
-          event.preventDefault();
-
-          let newURLValue = prompt('Enter new link URL');
-
-          //get current format and then offset and index of current link blot
-          const linkElemOffset = currentElem.offset();
-          const linkElemlength = currentElem.length();
-          this.quill.formatText(linkElemOffset, linkElemOffset + linkElemlength, {
-            'link': newURLValue
-          }, Quill.sources.USER);
-
-        }.bind(this));
-
-
-        $(this.removeLinkButton).off('click').on('click', function (event) {
-          event.preventDefault();
-
-        }.bind(this));
-
-        // var my_node = this.quill.selection.getNativeRange().start.node;
-        // var my_blot = Parchment.find(my_node);
-        // const currentFormats = this.quill.getFormat(range);
-        // const link = currentFormats['link'];
-        $(this.linkOpener).css({
-          display : 'block',
-          top: bounds.top + bounds.height,
-          left: bounds.left
-        })
-      }else{
-        $(this.linkOpener).css({
-          display : 'none'
-        });
+        }
       }
-    }else {
-      $(this.linkOpener).css({
-        display : 'none'
-      })
+    }else{
+      this.removeHiglightedComment();
     }
   }
 }
@@ -227,3 +297,4 @@ window.plugin = {};
 window.plugin.Counter = Counter;
 window.plugin.InlineToolbarHover = InlineToolbarHover;
 window.plugin.InlineLinkOpenerHover = InlineLinkOpenerHover;
+window.plugin.CommentHighlighter = CommentHighlighter;

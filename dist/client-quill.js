@@ -2,13 +2,18 @@ var BackgroundClass = Quill.import('attributors/class/background');
 var ColorClass = Quill.import('attributors/class/color');
 let SizeStyle = Quill.import('attributors/style/size');
 
+let HistoryModule = Quill.import('modules/history');
+
 Quill.register(BackgroundClass, true);
 Quill.register(ColorClass, true);
 Quill.register(SizeStyle, true);
 
+
 Quill.register('modules/counter',window.plugin.Counter);
 Quill.register('modules/inlineToolbarHover',window.plugin.InlineToolbarHover);
 Quill.register('modules/inlineLinkOpener',window.plugin.InlineLinkOpenerHover);
+Quill.register('modules/history',HistoryModule);
+Quill.register('modules/commentHighlighter',window.plugin.CommentHighlighter);
 
 //blot section
 let Inline = Quill.import('blots/inline');
@@ -39,14 +44,6 @@ class LinkBlot extends Inline{
   static create(value){
     let node = super.create();
     let button = document.createElement('span');
-    button.setAttribute('style', 'width:10px;height:10px;display:block;background:black;');
-    button.innerText = '&nbsp;';
-    node.onmouseover = function(){
-
-    };
-    node.onmouseout = function(){
-    };
-
     // Sanitize url value if desired
     node.setAttribute('href', value);
 
@@ -63,9 +60,30 @@ class LinkBlot extends Inline{
     return node.getAttribute('href');
   }
 }
-
 LinkBlot.blotName = 'link';
 LinkBlot.tagName = 'a';
+
+class CommentBlot extends Inline{
+  static create(value){
+    let node = super.create();
+    node.setAttribute('data-commentID', value);
+    return node;
+  }
+
+  static formats(node) {
+    // We will only be called with a node already
+    // determined to be a Link blot, so we do
+    // not need to check ourselves
+    const formats = {};
+
+    formats['data-commentID'] = node.getAttribute('data-commentID');
+    formats['style'] = node.getAttribute('style');
+    return node.getAttribute('data-commentID');
+  }
+}
+CommentBlot.blotName = 'comment';
+CommentBlot.className = 'comment-blot';
+CommentBlot.tagName = 'span';
 
 Quill.register(BoldBlot);
 Quill.register(ItalicBlot);
@@ -74,7 +92,7 @@ Quill.register(StrikethroughBlot);
 Quill.register(LinkBlot);
 Quill.register(ListBlot);
 Quill.register(TextAlignmentBlot);
-
+Quill.register('formats/comment',CommentBlot);
 
 //block section
 class BlockquoteBlot extends Block{}
@@ -305,6 +323,122 @@ $('#ul-align-button').click(function(event){
   toggleInline(range,'list','bullet');
 });
 
+$('#comment-button').click(function(event){
+  addCommentBlot();
+});
+
+function resolveCommentBlot(){
+  
+}
+
+function addCommentBlot(){
+  //TODO : when adding new comment then check if current element comment is available / not.
+  let range = quill.getSelection();
+  if (range) {
+    let commentID = prompt('Enter comment ID ');
+    if (range.length != 0) {
+      //TODO : if comment blot is not available at range then add comment format
+      const format = quill.getFormat(range);
+      let commentFormat = format['comment'];
+
+      if(commentFormat != null){
+        if(!(commentFormat instanceof Array)){
+          commentFormat = [].concat(commentFormat);
+        }
+        commentFormat.push(commentID);
+
+        quill.formatText(range.index, range.length, {
+          'comment': commentFormat.toString()
+        },Quill.sources.USER);
+
+      }else{
+        const offsetAndFormats = getOffsetAndFormatsFromCurrentRange(range);
+        const formats = getFormatsFromRange(offsetAndFormats);
+        if(formats['comment'] != null) {
+          offsetAndFormats.map(function (offsetAndFormat) {
+            const offset = offsetAndFormat.offset;
+            const length = offsetAndFormat.length;
+            const format = offsetAndFormat.format;
+            let commentFormat = format['comment'];
+            if (commentFormat != null) {
+              if (!(commentFormat instanceof Array)) {
+                commentFormat = [].concat(commentFormat);
+              }
+              commentFormat.push(commentID);
+            }else{
+              commentFormat = commentID;
+            }
+
+            quill.formatText(offset, length, {
+              'comment': commentFormat.toString()
+            }, Quill.sources.USER);
+          });
+        }else {
+          quill.format('comment', commentID, Quill.sources.USER);
+        }
+      }
+    }else{
+      //TODO: if range is not on selected text then get text of it
+    }
+  }else{
+
+  }
+}
+
+/**
+ * NOTE : there are something wrong with method `quill.getFormat`. So we need this method to get real data
+ */
+function getOffsetAndFormatsFromCurrentRange(range){
+  const offsetAndFormats = [];
+  const delta = quill.getContents(range);
+  delta.ops.map(function(op, index){
+    const attributes = (typeof op['attributes'] !== 'undefined') ? op['attributes'] : null;
+    const textLength = op['insert'].length;
+
+    let offsetValue = 0;
+    if(index == 0) { //if start index then use first range index
+      offsetValue = range.index;
+    }else{
+      offsetValue = 0;
+      const currentIteratorValue = offsetAndFormats[index - 1];
+      offsetValue += currentIteratorValue.offset + currentIteratorValue.length;
+    }
+
+    offsetAndFormats.push({
+      offset: offsetValue,
+      length: textLength,
+      format : attributes
+    });
+  });
+
+  return offsetAndFormats;
+}
+
+function getFormatsFromRange(offsetAndFormats){
+  const formats = {};
+  Object.keys(offsetAndFormats).map(function(offsetAndFormatKey){
+    const offsetAndFormat = offsetAndFormats[offsetAndFormatKey];
+    const format = offsetAndFormat.format;
+    const offset = offsetAndFormat.offset;
+    const length = offsetAndFormat.length;
+    if(format != null) {
+      Object.keys(format).map(function (formatKey) {
+        const formatValue = format[formatKey];
+        if (typeof formats[formatKey] === 'undefined') {
+          formats[formatKey] = [];
+        }
+
+        formats[formatKey].push({
+          offset: offset,
+          length: length
+        });
+      });
+    }
+  });
+
+  return formats;
+}
+
 const quill = new Quill('#editor-container',{
   modules: {
     counter: {
@@ -312,7 +446,11 @@ const quill = new Quill('#editor-container',{
       unit: 'word'
     },
     inlineToolbarHover : true,
-    inlineLinkOpener : true
+    inlineLinkOpener : true,
+    commentHighlighter : true,
+    history : {
+      userOnly : true
+    },
   }
 });
 

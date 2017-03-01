@@ -46,3 +46,12 @@ body {
   background-color: black;
   color:white;
 }
+
+.comment-blot{
+  background-color:goldenrod;
+}
+
+.highlighted-comment-blot{
+  background-color: black;
+  color:white;
+}
