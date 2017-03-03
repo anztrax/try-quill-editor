@@ -41,7 +41,7 @@ export default class Index extends React.Component{
               <option value="normal">Normal</option>
             </select>
             <select id="text-alignment-dropdown">
-              <option value="false">Left</option>
+              <option value={false}>Left</option>
               <option value="center">Center</option>
               <option value="right">Right</option>
               <option value="justify">Justify</option>

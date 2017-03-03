@@ -340,26 +340,33 @@ function removeCommentBlot(){
 
     //NOTE : get all node that contain data-commentid == commentFormat and then remove commentid
     if(commentFormat != null){
-      const textRanges = getCommentBlot(commentFormat);
+      //NOTE : get last value of commentID
+      const commentIDValues = commentFormat.split(',');
+      const commentIDLastValue = commentIDValues[commentIDValues.length - 1];
 
+      const textRanges = getCommentBlot(commentIDLastValue);
       textRanges.map(function(textRange){
-        let commentFormatValue;
-        if(!(commentFormat instanceof Array)){
-          commentFormatValue = false;
-        }else{
-          commentFormatValue = commentFormat.split(",");
-          const indexOfCommentID = commentFormatValue.findIndex(function(commentID){
-            return commentID >= commentFormat
-          });
-          if(indexOfCommentID != -1){
-            commentFormatValue.splice(indexOfCommentID,1);
-            commentFormatValue = commentFormatValue.join(',');
+        const currentCommentFormat = textRange['format']['comment'];
+        const currentCommentFormatFragment = currentCommentFormat.split(',');
+
+        //NOTE : we get commentID and then we just compare with `commentIDLastValue` ...
+        let commentFormatValue = false;
+
+        const indexOfCommentID = currentCommentFormatFragment.findIndex(function(commentID){
+          return commentID == commentIDLastValue
+        });
+        if(indexOfCommentID != -1){
+          currentCommentFormatFragment.splice(indexOfCommentID,1);
+          if(currentCommentFormatFragment.length > 0){
+            commentFormatValue = currentCommentFormatFragment.join(',');
+          }else{
+            commentFormatValue = false;
           }
         }
 
-        quill.formatText(textRange.offset, textRange.length, {
+        quill.formatText(textRange.index, textRange.length, {
           'comment': commentFormatValue
-        },Quill.sources.USER);
+        },Quill.sources.API);
       });
     }
   }
@@ -370,12 +377,16 @@ function getCommentBlot(commentID){
   const allCommentNodes = document.querySelectorAll('span[data-commentid*="'+commentID+'"');
   for(let i=0;i < allCommentNodes.length ;i++){
     const commentBlot =  Quill.find(allCommentNodes[i]);
-    const offset = commentBlot.offset();
-    const length = commentBlot.length();
+    const commentBlotIndex = quill.getIndex(commentBlot);
+    const formats = commentBlot.formats();
+    const commentFormat = formats['comment'];
 
     textRanges.push({
-      offset : offset,
-      length : length
+      format : {
+        comment : commentFormat
+      },
+      index : commentBlotIndex,
+      length : commentBlot.length()
     });
   }
 

@@ -293,6 +293,12 @@ class CommentHighlighter{
   }
 }
 
+/**
+ * TODO : there's a bug :
+ *   - handle clipboard when pasting multiple line value inside comment blot
+ *   - handle enter at the middle of comment :
+ *       - if value is empty then add a space
+ */
 class CommentWhitespaceManagement{
   constructor(quill, options){
     this.quill = quill;
@@ -315,7 +321,7 @@ class CommentWhitespaceManagement{
     const commentBlot = Quill.find(lastCommentNode);
     const commentBlotIndex = this.quill.getIndex(commentBlot);
 
-    if(range.index + range.length >= (commentBlotIndex + commentBlot.offset() + commentBlot.length())){
+    if(range.index + range.length >= (commentBlotIndex + commentBlot.length())){
       return true;
     }
 
@@ -329,9 +335,8 @@ class CommentWhitespaceManagement{
     if (range != null) {
       const formats = this.quill.getFormat(range);
       if (formats != null && typeof formats['comment'] !== 'undefined') {
-        const commentId = formats['comment'];
-        const commentIdArray = commentId.split(',');
-        const commentBlots = this.getCommentBlots(commentIdArray[commentIdArray.length - 1]);
+        const commentIds = formats['comment'];
+        const commentBlots = this.getCommentBlots(commentIds[commentIds.length - 1]);
         const isEndOfCommentText = this.isAtTheEndOfCommentText(commentBlots,range);
         console.log('is end of comment text : ', isEndOfCommentText);
 
@@ -339,7 +344,7 @@ class CommentWhitespaceManagement{
           if(typeof currentOps !== 'undefined' && typeof currentOps['insert'] !== 'undefined') {
             this.quill.formatText(range.index - 1, range.index, {
               'comment': false
-            }, Quill.sources.USER);
+            }, Quill.sources.API);
           }
         }else{
 
