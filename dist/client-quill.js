@@ -14,6 +14,7 @@ Quill.register('modules/inlineToolbarHover',window.plugin.InlineToolbarHover);
 Quill.register('modules/inlineLinkOpener',window.plugin.InlineLinkOpenerHover);
 Quill.register('modules/history',HistoryModule);
 Quill.register('modules/commentHighlighter',window.plugin.CommentHighlighter);
+Quill.register('modules/commentWhitespaceManagement',window.plugin.CommentWhitespaceManagement);
 
 //blot section
 let Inline = Quill.import('blots/inline');
@@ -326,9 +327,59 @@ $('#ul-align-button').click(function(event){
 $('#comment-button').click(function(event){
   addCommentBlot();
 });
+$('#resolve-comment-button').click(function(event){
+  removeCommentBlot();
+});
 
-function resolveCommentBlot(){
-  
+function removeCommentBlot(){
+  //TODO : when remove new comment check if current element comment is available / not
+  let range = quill.getSelection();
+  if(range){
+    const format = quill.getFormat(range);
+    let commentFormat = format['comment'];
+
+    //NOTE : get all node that contain data-commentid == commentFormat and then remove commentid
+    if(commentFormat != null){
+      const textRanges = getCommentBlot(commentFormat);
+
+      textRanges.map(function(textRange){
+        let commentFormatValue;
+        if(!(commentFormat instanceof Array)){
+          commentFormatValue = false;
+        }else{
+          commentFormatValue = commentFormat.split(",");
+          const indexOfCommentID = commentFormatValue.findIndex(function(commentID){
+            return commentID >= commentFormat
+          });
+          if(indexOfCommentID != -1){
+            commentFormatValue.splice(indexOfCommentID,1);
+            commentFormatValue = commentFormatValue.join(',');
+          }
+        }
+
+        quill.formatText(textRange.offset, textRange.length, {
+          'comment': commentFormatValue
+        },Quill.sources.USER);
+      });
+    }
+  }
+}
+
+function getCommentBlot(commentID){
+  const textRanges = [];
+  const allCommentNodes = document.querySelectorAll('span[data-commentid*="'+commentID+'"');
+  for(let i=0;i < allCommentNodes.length ;i++){
+    const commentBlot =  Quill.find(allCommentNodes[i]);
+    const offset = commentBlot.offset();
+    const length = commentBlot.length();
+
+    textRanges.push({
+      offset : offset,
+      length : length
+    });
+  }
+
+  return textRanges;
 }
 
 function addCommentBlot(){
@@ -359,14 +410,18 @@ function addCommentBlot(){
             const offset = offsetAndFormat.offset;
             const length = offsetAndFormat.length;
             const format = offsetAndFormat.format;
-            let commentFormat = format['comment'];
-            if (commentFormat != null) {
-              if (!(commentFormat instanceof Array)) {
-                commentFormat = [].concat(commentFormat);
+            let commentFormat = commentID;
+
+            if(format != null) {
+              commentFormat = format['comment'];
+              if (commentFormat != null) {
+                if (!(commentFormat instanceof Array)) {
+                  commentFormat = [].concat(commentFormat);
+                }
+                commentFormat.push(commentID);
+              } else {
+                commentFormat = commentID;
               }
-              commentFormat.push(commentID);
-            }else{
-              commentFormat = commentID;
             }
 
             quill.formatText(offset, length, {
@@ -439,8 +494,18 @@ function getFormatsFromRange(offsetAndFormats){
   return formats;
 }
 
+var toolbarOptions = [
+  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+  [{ 'align': [] }],
+  ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+];
+
 const quill = new Quill('#editor-container',{
+  placeholder: 'Place text here...',
+  theme: 'snow',
   modules: {
+    toolbar : false,
     counter: {
       container: '#text-counter',
       unit: 'word'
@@ -451,6 +516,7 @@ const quill = new Quill('#editor-container',{
     history : {
       userOnly : true
     },
+    commentWhitespaceManagement : true
   }
 });
 

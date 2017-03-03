@@ -293,8 +293,69 @@ class CommentHighlighter{
   }
 }
 
+class CommentWhitespaceManagement{
+  constructor(quill, options){
+    this.quill = quill;
+    this.options = options;
+    this.isAtTheEndOfCommentText = this.isAtTheEndOfCommentText.bind(this);
+    this.getCommentBlots = this.getCommentBlots.bind(this);
+
+    quill.on('text-change',this.handleTextChange.bind(this));
+  }
+
+  getCommentBlots(commentId){
+    return document.querySelectorAll('span[data-commentid*="'+commentId+'"');
+  }
+
+  isAtTheEndOfCommentText(allCommentNode,range){
+    /**
+     * NOTE : get index and length of the comment and then check at current range
+     */
+    const lastCommentNode = allCommentNode[allCommentNode.length - 1];
+    const commentBlot = Quill.find(lastCommentNode);
+    const commentBlotIndex = this.quill.getIndex(commentBlot);
+
+    if(range.index + range.length >= (commentBlotIndex + commentBlot.offset() + commentBlot.length())){
+      return true;
+    }
+
+    return false;
+  }
+
+  handleTextChange(delta, oldContents, source) {
+    const currentOps = delta.ops[1];
+    const range = this.quill.getSelection();
+    //if current operation is insert something at then end of comment and then don't make it into comment
+    if (range != null) {
+      const formats = this.quill.getFormat(range);
+      if (formats != null && typeof formats['comment'] !== 'undefined') {
+        const commentId = formats['comment'];
+        const commentIdArray = commentId.split(',');
+        const commentBlots = this.getCommentBlots(commentIdArray[commentIdArray.length - 1]);
+        const isEndOfCommentText = this.isAtTheEndOfCommentText(commentBlots,range);
+        console.log('is end of comment text : ', isEndOfCommentText);
+
+        if (isEndOfCommentText) {
+          if(typeof currentOps !== 'undefined' && typeof currentOps['insert'] !== 'undefined') {
+            this.quill.formatText(range.index - 1, range.index, {
+              'comment': false
+            }, Quill.sources.USER);
+          }
+        }else{
+
+        }
+      }
+
+      console.log('range : ', range);
+      console.log('delta : ', delta, ' old contents : ', oldContents);
+    }
+  }
+}
+
 window.plugin = {};
 window.plugin.Counter = Counter;
 window.plugin.InlineToolbarHover = InlineToolbarHover;
 window.plugin.InlineLinkOpenerHover = InlineLinkOpenerHover;
 window.plugin.CommentHighlighter = CommentHighlighter;
+
+window.plugin.CommentWhitespaceManagement = CommentWhitespaceManagement;
